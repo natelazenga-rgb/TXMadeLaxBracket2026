@@ -773,7 +773,7 @@ body { font-family: 'Barlow', sans-serif; background: var(--navy); color: var(--
 
 <script>
 // ── DATA ──────────────────────────────────────────────────
-const  = new Date('2026-05-09T12:00:00-04:00');
+const LOCK_DATE = new Date('2026-05-09T11:00:00-06:00'); // 11am CST
 
 const ROUNDS = [
   { id: 'r1', name: 'First Round', pts: 1 },
@@ -943,7 +943,7 @@ function switchTab(tab) {
 }
 
 // ── PICKS ─────────────────────────────────────────────────
-function isLocked() { return new Date() >= ; }
+function isLocked() { return new Date() >= LOCK_DATE; }
 
 function getGames(rid) {
   if (rid==='r1') return R1;
