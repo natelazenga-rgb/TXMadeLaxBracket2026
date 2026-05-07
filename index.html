@@ -1276,44 +1276,130 @@ function viewPicks(username) {
 function closeModal() { document.getElementById('picksModal').classList.remove('open'); }
 
 // ── ADMIN ─────────────────────────────────────────────────
+
+// Resolve teams for admin using RESULTS (not picks) to cascade forward
+function resolveTeamsFromResults(game, rid) {
+  if (rid === 'r1') return [game.home, game.away];
+  const prev = rid==='r2' ? 'r1' : rid==='sf' ? 'r2' : 'sf';
+  const prevResults = S.results[prev] || {};
+  return game.pairs.map(pid => {
+    const winner = prevResults[pid];
+    return winner ? { name: winner } : null;
+  });
+}
+
 function renderAdmin() {
   const grid = document.getElementById('adminResultGrid');
   let html = '';
+
   ROUNDS.forEach(r => {
     getGames(r.id).forEach(g => {
-      const teams = resolveTeams(g, r.id);
+      const teams = resolveTeamsFromResults(g, r.id);
       const result = (S.results[r.id] || {})[g.id] || '';
-      const t1 = teams[0] ? teams[0].name : 'TBD';
-      const t2 = teams[1] ? teams[1].name : 'TBD';
+      const t1 = teams[0] ? teams[0].name : null;
+      const t2 = teams[1] ? teams[1].name : null;
       const date = g.date || (g.venue ? g.venue + ' · ' + (g.date||'') : '');
-      html += `<div class="result-tile">
-        <div class="match-lbl">${r.name}</div>
+
+      // If previous round result isn't in yet, this game is not available
+      const prevComplete = r.id === 'r1' || (t1 && t2);
+      const isLocked = !!result; // already has a result — lock the select
+
+      let selectHTML = '';
+      if (!prevComplete) {
+        selectHTML = `<div style="font-size:12px;color:#aaa;font-style:italic;padding:6px 0">Awaiting previous round results</div>`;
+      } else if (isLocked) {
+        selectHTML = `
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 0">
+            <span style="font-size:13px;font-weight:600;color:#2d6a4f">✓ ${result}</span>
+            <button onclick="unlockResult('${r.id}','${g.id}')" style="font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid #ddd;background:#fff;color:#888;cursor:pointer">Change</button>
+          </div>`;
+      } else {
+        selectHTML = `
+          <select id="res_${r.id}_${g.id}">
+            <option value="">— Select winner —</option>
+            ${t1 ? `<option value="${t1}">${t1}</option>` : ''}
+            ${t2 ? `<option value="${t2}">${t2}</option>` : ''}
+          </select>`;
+      }
+
+      const tileBorder = isLocked ? 'border-left:3px solid #2d6a4f' : (!prevComplete ? 'opacity:0.5' : '');
+      html += `<div class="result-tile" style="${tileBorder}">
+        <div class="match-lbl">${r.name} · ${t1||'TBD'} vs ${t2||'TBD'}</div>
         <div class="match-sub">${date || ''}</div>
-        <select id="res_${r.id}_${g.id}">
-          <option value="">— No result yet —</option>
-          ${t1!=='TBD'?`<option value="${t1}" ${result===t1?'selected':''}>${t1}</option>`:''}
-          ${t2!=='TBD'?`<option value="${t2}" ${result===t2?'selected':''}>${t2}</option>`:''}
-        </select>
+        ${selectHTML}
       </div>`;
     });
   });
+
+  // Tiebreaker result entry
+  const tbResult = (S.results['tiebreaker'] || {})['goals'] || '';
+  html += `<div class="result-tile" style="border-left:3px solid #C85A14;grid-column:1/-1">
+    <div class="match-lbl" style="color:#C85A14">🏆 Tiebreaker — Championship total goals</div>
+    <div class="match-sub">Enter the actual total goals scored in the championship game</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+      <input type="number" id="res_tiebreaker_goals" min="0" max="99"
+        value="${tbResult}" placeholder="Total goals"
+        style="width:100px;padding:7px 10px;border-radius:6px;border:1px solid #e0e0e0;font-size:14px;font-weight:600" />
+      <span style="font-size:12px;color:#aaa">e.g. 18</span>
+    </div>
+  </div>`;
+
   grid.innerHTML = html;
   renderUserList();
 }
 
+// Allow admin to unlock a locked result to correct it
+function unlockResult(rid, gid) {
+  if (!confirm('Change this result? Player scores will recalculate.')) return;
+  if (!S.results[rid]) S.results[rid] = {};
+  delete S.results[rid][gid];
+  // Also clear any downstream results that depended on this
+  const roundOrder = ['r1','r2','sf','f'];
+  const ridx = roundOrder.indexOf(rid);
+  for (let i = ridx + 1; i < roundOrder.length; i++) {
+    const nextRid = roundOrder[i];
+    getGames(nextRid).forEach(g => {
+      if (g.pairs && g.pairs.includes(gid)) {
+        if (S.results[nextRid]) delete S.results[nextRid][g.id];
+        unlockResult(nextRid, g.id);
+      }
+    });
+  }
+  renderAdmin();
+}
+
 async function doSaveResults() {
-  const newResults = {};
+  // Start from existing locked results so we never overwrite them
+  const newResults = JSON.parse(JSON.stringify(S.results));
+
   ROUNDS.forEach(r => {
-    newResults[r.id] = {};
+    if (!newResults[r.id]) newResults[r.id] = {};
     getGames(r.id).forEach(g => {
+      // Only update if there's a visible select (not locked, not awaiting)
       const el = document.getElementById(`res_${r.id}_${g.id}`);
-      if (el && el.value) newResults[r.id][g.id] = el.value;
+      if (el && el.value) {
+        newResults[r.id][g.id] = el.value;
+      }
+      // If already locked (no select rendered), keep existing result — already in newResults
     });
   });
+
+  // Tiebreaker result
+  const tbEl = document.getElementById('res_tiebreaker_goals');
+  if (tbEl && tbEl.value) {
+    if (!newResults['tiebreaker']) newResults['tiebreaker'] = {};
+    newResults['tiebreaker']['goals'] = tbEl.value;
+  }
+
   try {
     const r = await api({ action: 'saveResults', username: S.user, password: S.pass, results: newResults });
-    if (r.ok) { S.results = newResults; renderPicks(); renderLeaderboard(); showToast('Results updated ✓'); }
-    else showToast(r.error);
+    if (r.ok) {
+      S.results = newResults;
+      renderAdmin();
+      renderPicks();
+      renderLeaderboard();
+      showToast('Results updated ✓');
+    } else showToast(r.error);
   } catch(e) { showToast('Connection error'); }
 }
 
