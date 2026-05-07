@@ -752,12 +752,13 @@ let S = {
   gradYear: '', teamName: '',
   picks: {}, results: {}, allPicks: {}, allUsers: [],
   dirty: false, activeRound: 'r1', activeTab: 'picks',
-  sheetUrl: ''
+  sheetUrl: 'https://script.google.com/macros/s/AKfycbwJ99UN9sMfcBuxUEf7b48WzOukxlL0DVtCIxZyOsQMOWnepzXCBDo6vRFcwo7_5vyR/exec'
 };
 
 // ── INIT ──────────────────────────────────────────────────
 function init() {
-  S.sheetUrl = ls('sheetUrl') || '';
+  S.sheetUrl = 'https://script.google.com/macros/s/AKfycbwJ99UN9sMfcBuxUEf7b48WzOukxlL0DVtCIxZyOsQMOWnepzXCBDo6vRFcwo7_5vyR/exec';
+  lsSet('sheetUrl', S.sheetUrl);
   startCountdown();
 }
 
@@ -817,7 +818,7 @@ async function doLogin() {
   const errEl = document.getElementById('loginErr');
   errEl.textContent = '';
   if (!u || !p) { errEl.textContent = 'Enter username and password'; return; }
-  if (!S.sheetUrl) { errEl.textContent = 'Google Sheet not configured — see setup link below'; return; }
+
 
   try {
     const r = await api({ action: 'login', username: u, password: p });
@@ -1213,7 +1214,7 @@ async function doSignup() {
   if (!password) { errEl.textContent = 'Choose a password'; return; }
   if (password.length < 4) { errEl.textContent = 'Password must be at least 4 characters'; return; }
   if (password !== confirm) { errEl.textContent = 'Passwords do not match'; return; }
-  if (!S.sheetUrl) { errEl.textContent = 'Google Sheet not configured — see setup link on sign-in page'; return; }
+
 
   const btn = document.querySelector('#signupScreen .btn-login');
   btn.textContent = 'Creating account…';
