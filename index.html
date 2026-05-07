@@ -514,6 +514,68 @@ body { font-family: 'Barlow', sans-serif; background: var(--navy); color: var(--
   .save-bar { position: sticky; bottom: 0; left: auto; right: auto; border-radius: 0; }
   #mainScreen { display: grid; grid-template-rows: auto auto 1fr; }
 }
+
+/* ── BRACKET ─────────────────────────────────────────────── */
+.bracket-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 1rem; }
+.bracket { display: flex; gap: 0; min-width: 900px; align-items: flex-start; }
+.bracket-col { display: flex; flex-direction: column; flex: 1; min-width: 160px; }
+.bracket-col-header { text-align: center; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: #888; padding: 8px 0 10px; border-bottom: 2px solid #C85A14; margin-bottom: 0; }
+.bracket-col-header span { display: block; font-size: 10px; font-weight: 400; color: #bbb; margin-top: 2px; text-transform: none; letter-spacing: 0; }
+
+.b-matchup-wrap { display: flex; align-items: center; position: relative; }
+.b-matchup { flex: 1; margin: 6px 0; border-radius: 8px; overflow: hidden; border: 1px solid #e0e0e0; background: #fff; position: relative; }
+.b-matchup.has-result { border-color: #ddd; }
+
+.b-team { display: flex; align-items: center; gap: 8px; padding: 9px 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0; transition: background 0.1s; position: relative; min-height: 42px; }
+.b-team:last-child { border-bottom: none; }
+.b-team:hover:not(.b-locked):not(.b-disabled) { background: #fff4ed; }
+.b-team.b-picked { background: #C85A14; }
+.b-team.b-picked .b-name { color: #fff; font-weight: 600; }
+.b-team.b-picked .b-seed { background: rgba(0,0,0,0.2); color: #fff; }
+.b-team.b-picked .b-rec { color: rgba(255,255,255,0.7); }
+.b-team.b-correct { background: #2d6a4f; }
+.b-team.b-correct .b-name { color: #fff; font-weight: 600; }
+.b-team.b-correct .b-seed { background: rgba(0,0,0,0.2); color: #fff; }
+.b-team.b-wrong { background: #f5f5f5; }
+.b-team.b-wrong .b-name { color: #bbb; text-decoration: line-through; }
+.b-team.b-tbd { cursor: default; background: #fafafa; }
+.b-team.b-locked { cursor: default; }
+.b-team.b-disabled { cursor: default; }
+.b-seed { flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #666; }
+.b-name { font-size: 13px; font-weight: 500; color: #1a1a1a; flex: 1; line-height: 1.2; }
+.b-rec { font-size: 10px; color: #aaa; }
+.b-tbd-text { font-size: 12px; color: #ccc; font-style: italic; }
+.b-icon { font-size: 12px; margin-left: 2px; }
+
+/* connector lines */
+.b-connector { width: 20px; flex-shrink: 0; position: relative; align-self: stretch; }
+.b-connector-right { width: 20px; flex-shrink: 0; }
+
+/* championship column */
+.b-champ-col { display: flex; flex-direction: column; align-items: center; min-width: 180px; flex: 1.2; }
+.b-champ-matchup { width: 100%; border-radius: 8px; overflow: hidden; border: 2px solid #C85A14; background: #fff; margin-bottom: 8px; }
+.b-champ-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: #C85A14; text-align: center; margin-bottom: 6px; }
+
+/* tiebreaker */
+.tiebreaker-box { background: #fff; border: 2px solid #C85A14; border-radius: 8px; padding: 14px; width: 100%; margin-top: 8px; text-align: center; }
+.tiebreaker-box label { font-size: 12px; font-weight: 600; color: #C85A14; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px; }
+.tiebreaker-box p { font-size: 11px; color: #888; margin-bottom: 8px; }
+.tiebreaker-input { width: 80px; padding: 8px; text-align: center; font-size: 20px; font-weight: 700; font-family: 'Barlow Condensed', sans-serif; border: 1px solid #e0e0e0; border-radius: 6px; color: #1a1a1a; }
+.tiebreaker-input:focus { outline: none; border-color: #C85A14; }
+.tiebreaker-input:disabled { background: #f5f5f5; color: #999; }
+
+/* bracket spacers for visual alignment */
+.b-spacer { flex: 1; }
+
+/* result badge on matchup */
+.b-result-tag { position: absolute; top: 4px; right: 6px; font-size: 9px; background: #2d6a4f; color: #fff; padding: 1px 5px; border-radius: 6px; }
+
+@media (max-width: 768px) {
+  .bracket { min-width: 700px; }
+  .bracket-col { min-width: 140px; }
+  .b-name { font-size: 12px; }
+}
+
 </style>
 </head>
 <body>
@@ -648,10 +710,9 @@ body { font-family: 'Barlow', sans-serif; background: var(--navy); color: var(--
     <div class="locked-banner" id="lockedBanner" style="display:none">
       🔒 <span><strong>Picks are locked.</strong> Tournament is underway — good luck!</span>
     </div>
-    <div class="round-pills" id="roundPills"></div>
-    <div class="matchup-grid" id="matchupGrid"></div>
+    <div id="bracketWrap"></div>
     <div class="save-bar" id="saveBar">
-      <span class="save-msg" id="saveMsg">Select winners for each game, then save.</span>
+      <span class="save-msg" id="saveMsg">Pick winners — they advance automatically.</span>
       <button class="btn-save" id="saveBtn" onclick="doSavePicks()">Save picks</button>
     </div>
   </div>
@@ -831,6 +892,7 @@ async function doLogin() {
       api({ action: 'getResults' })
     ]);
     S.picks = picksRes.picks || {};
+    if (picksRes.tiebreaker) S.picks['tiebreaker'] = picksRes.tiebreaker;
     S.results = resultsRes.results || {};
 
     if (S.isAdmin) {
@@ -883,62 +945,6 @@ function switchTab(tab) {
 // ── PICKS ─────────────────────────────────────────────────
 function isLocked() { return new Date() >= LOCK_DATE; }
 
-function renderPicks() {
-  const locked = isLocked();
-  document.getElementById('lockedBanner').style.display = locked ? '' : 'none';
-  document.getElementById('saveBar').style.display = locked ? 'none' : '';
-
-  const pills = document.getElementById('roundPills');
-  pills.innerHTML = ROUNDS.map(r =>
-    `<button class="round-pill${r.id===S.activeRound?' active':''}" onclick="selRound('${r.id}')">${r.name} · ${r.pts}pt${r.pts>1?'s':''}</button>`
-  ).join('');
-
-  const grid = document.getElementById('matchupGrid');
-  const games = getGames(S.activeRound);
-  const roundPts = ROUNDS.find(r => r.id === S.activeRound).pts;
-
-  grid.innerHTML = games.map(game => {
-    const teams = resolveTeams(game, S.activeRound);
-    const pick = (S.picks[S.activeRound] || {})[game.id];
-    const result = (S.results[S.activeRound] || {})[game.id];
-    const date = game.date || (game.venue + ' · ' + game.date);
-
-    const teamRows = teams.map(t => {
-      if (!t) return `<div class="tbd-row">TBD — complete previous round first</div>`;
-      const isPick = pick === t.name;
-      const isResult = result === t.name;
-      const isWrong = result && isPick && result !== t.name;
-      const isCorrect = result && isPick && result === t.name;
-      let cls = 'team-btn';
-      if (isCorrect) cls += ' correct';
-      else if (isWrong) cls += ' wrong';
-      else if (isPick) cls += ' picked';
-
-      const disabled = locked || !!result ? 'disabled' : '';
-      const onclick = (!locked && !result) ? `onclick="pickTeam('${S.activeRound}','${game.id}','${t.name}')"` : '';
-      const icon = isResult ? '🏆' : (isWrong ? '✗' : '');
-      return `<button class="${cls}" ${disabled} ${onclick}>
-        <div class="seed-dot">${t.seed || '—'}</div>
-        <span class="team-nm">${t.name}</span>
-        <span class="team-rec">${t.rec || ''}</span>
-        <span class="result-icon">${icon}</span>
-      </button>`;
-    }).join('');
-
-    const metaDate = game.date || '';
-    const metaVenue = game.venue || '';
-    return `<div class="matchup-card">
-      <div class="matchup-meta">
-        <span>${metaDate}${metaVenue ? ' · '+metaVenue : ''}</span>
-        <span class="pts-tag">${roundPts}pt${roundPts>1?'s':''}</span>
-      </div>
-      ${teamRows}
-    </div>`;
-  }).join('');
-}
-
-function selRound(id) { S.activeRound = id; renderPicks(); }
-
 function getGames(rid) {
   if (rid==='r1') return R1;
   if (rid==='r2') return R2;
@@ -947,22 +953,216 @@ function getGames(rid) {
   return [];
 }
 
-function resolveTeams(game, rid) {
+function resolveTeams(game, rid, picksObj) {
+  const p = picksObj || S.picks;
   if (rid === 'r1') return [game.home, game.away];
   const prev = rid==='r2' ? 'r1' : rid==='sf' ? 'r2' : 'sf';
-  const prevPicks = S.picks[prev] || {};
+  const prevPicks = p[prev] || {};
   return game.pairs.map(pid => {
     const winner = prevPicks[pid];
     return winner ? {name: winner, seed: null, rec: ''} : null;
   });
 }
 
+// When a team is picked, clear any downstream picks that depended on the old pick
+function clearDownstream(rid, gid) {
+  const roundOrder = ['r1','r2','sf','f'];
+  const ridx = roundOrder.indexOf(rid);
+  // For each subsequent round, check if any game had the old winner advancing
+  // and remove those picks
+  for (let i = ridx + 1; i < roundOrder.length; i++) {
+    const nextRid = roundOrder[i];
+    const games = getGames(nextRid);
+    games.forEach(g => {
+      // Check if this game depends on the changed game
+      if (g.pairs && g.pairs.includes(gid)) {
+        const oldAdvancer = (S.picks[nextRid] || {})[g.id];
+        if (oldAdvancer) {
+          // The old pick in this game may no longer be valid — clear it and downstream
+          delete S.picks[nextRid][g.id];
+          clearDownstream(nextRid, g.id);
+        }
+      }
+    });
+  }
+}
+
 function pickTeam(rid, gid, name) {
+  // If re-picking, clear downstream
+  const oldPick = (S.picks[rid] || {})[gid];
+  if (oldPick && oldPick !== name) {
+    clearDownstream(rid, gid);
+  }
   if (!S.picks[rid]) S.picks[rid] = {};
   S.picks[rid][gid] = name;
   S.dirty = true;
   document.getElementById('saveMsg').textContent = 'Unsaved changes — tap Save picks';
-  renderPicks();
+  renderBracket();
+}
+
+function renderPicks() { renderBracket(); }
+
+function renderBracket() {
+  const locked = isLocked();
+  document.getElementById('lockedBanner').style.display = locked ? '' : 'none';
+  document.getElementById('saveBar').style.display = locked ? 'none' : '';
+
+  const wrap = document.getElementById('bracketWrap');
+
+  // Build bracket HTML — left half | champ col | right half
+  // Left half: R1 games 1-4 + QF 1-2 + SF 1
+  // Right half: SF 2 + QF 3-4 + R1 games 5-8 (mirrored)
+  // Center: Championship + tiebreaker
+
+  function teamHTML(t, rid, gid, locked, result) {
+    if (!t) {
+      return `<div class="b-team b-tbd b-disabled">
+        <span class="b-tbd-text">TBD</span>
+      </div>`;
+    }
+    const pick = (S.picks[rid] || {})[gid];
+    const isPick = pick === t.name;
+    const isResult = result === t.name;
+    const isWrong = result && isPick && !isResult;
+    const isCorrect = result && isPick && isResult;
+    let cls = 'b-team';
+    if (isCorrect) cls += ' b-correct';
+    else if (isWrong) cls += ' b-wrong';
+    else if (isPick) cls += ' b-picked';
+    if (locked || result) cls += ' b-locked';
+
+    const onclick = (!locked && !result) ? `onclick="pickTeam('${rid}','${gid}','${t.name}')"` : '';
+    const icon = isResult ? '🏆' : '';
+    return `<div class="${cls}" ${onclick}>
+      <div class="b-seed">${t.seed || '—'}</div>
+      <div style="flex:1;min-width:0">
+        <div class="b-name">${t.name}</div>
+        ${t.rec ? `<div class="b-rec">${t.rec}</div>` : ''}
+      </div>
+      <span class="b-icon">${icon}</span>
+    </div>`;
+  }
+
+  function matchupHTML(game, rid) {
+    const teams = resolveTeams(game, rid);
+    const result = (S.results[rid] || {})[game.id];
+    const pts = ROUNDS.find(r=>r.id===rid).pts;
+    const t1 = teamHTML(teams[0], rid, game.id, locked, result);
+    const t2 = teamHTML(teams[1], rid, game.id, locked, result);
+    const resultTag = result ? `<div class="b-result-tag">Final</div>` : '';
+    return `<div class="b-matchup${result?' has-result':''}" style="position:relative">
+      ${resultTag}
+      ${t1}${t2}
+    </div>`;
+  }
+
+  // Left column headers and matchups
+  const r1Games = R1;
+  const r2Games = R2;
+  const sfGames = SF;
+  const finGame = FIN[0];
+  const tbPick = S.picks['tiebreaker'] || '';
+  const finResult = (S.results['f'] || {})['f1'];
+
+  // Get the champion pick and result
+  const champTeams = resolveTeams(finGame, 'f');
+  const champPick = (S.picks['f'] || {})['f1'];
+  const champT1 = champTeams[0];
+  const champT2 = champTeams[1];
+
+  // Spacing helpers: rows per round to align correctly
+  // R1: 8 games, R2: 4 games, SF: 2 games, F: 1 game
+  // Each R2 game aligns with 2 R1 games, etc.
+
+  function colGames(games, rid, spacingTop, spacingBetween) {
+    let html = '';
+    games.forEach((g, i) => {
+      if (i === 0 && spacingTop > 0) html += `<div style="height:${spacingTop}px"></div>`;
+      else if (i > 0 && spacingBetween > 0) html += `<div style="height:${spacingBetween}px"></div>`;
+      html += matchupHTML(g, rid);
+    });
+    return html;
+  }
+
+  // LEFT HALF: r1 games 0-3, r2 games 0-1, sf game 0
+  const leftR1 = r1Games.slice(0,4);
+  const leftR2 = r2Games.slice(0,2);
+  const leftSF = sfGames.slice(0,1);
+
+  // RIGHT HALF: r1 games 4-7, r2 games 2-3, sf game 1 (flipped order for mirror)
+  const rightR1 = r1Games.slice(4,8);
+  const rightR2 = r2Games.slice(2,4);
+  const rightSF = sfGames.slice(1,2);
+
+  const GAME_H = 86; // approx px per matchup card
+  const GAP = 12;
+
+  // Left R1 spacingTop=0, between=GAP
+  // Left R2 spacingTop = (GAME_H+GAP)/2 - GAP/2, between = GAME_H + GAP
+  // Left SF spacingTop = (GAME_H+GAP)*1.5 - GAP/2
+  const r2Top = Math.round((GAME_H + GAP) / 2);
+  const r2Between = GAME_H + GAP;
+  const sfTop = Math.round((GAME_H + GAP) * 1.5);
+
+  const leftR1HTML = colGames(leftR1, 'r1', 0, GAP);
+  const leftR2HTML = colGames(leftR2, 'r2', r2Top, r2Between);
+  const leftSFHTML = colGames(leftSF, 'sf', sfTop, 0);
+
+  const rightR1HTML = colGames(rightR1, 'r1', 0, GAP);
+  const rightR2HTML = colGames(rightR2, 'r2', r2Top, r2Between);
+  const rightSFHTML = colGames(rightSF, 'sf', sfTop, 0);
+
+  const tbDisabled = locked ? 'disabled' : '';
+  const tbVal = S.picks['tiebreaker'] || '';
+
+  const champHTML = `
+    <div class="b-champ-col">
+      <div class="bracket-col-header" style="color:#C85A14;border-color:#C85A14">Championship<span>Mon May 25 · 1pm</span></div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:${sfTop}px">
+        <div class="b-champ-label">🏆 Champion</div>
+        <div class="b-champ-matchup">
+          ${teamHTML(champT1, 'f', 'f1', locked, finResult)}
+          ${teamHTML(champT2, 'f', 'f1', locked, finResult)}
+        </div>
+        <div class="tiebreaker-box">
+          <label>Tiebreaker</label>
+          <p>Total goals in the<br>championship game</p>
+          <input class="tiebreaker-input" type="number" min="0" max="99" placeholder="—"
+            value="${tbVal}" ${tbDisabled}
+            oninput="S.picks['tiebreaker']=this.value;S.dirty=true;document.getElementById('saveMsg').textContent='Unsaved changes — tap Save picks'" />
+        </div>
+      </div>
+    </div>`;
+
+  wrap.innerHTML = `<div class="bracket-scroll">
+    <div class="bracket">
+      <div class="bracket-col">
+        <div class="bracket-col-header">First Round<span>May 9–10</span></div>
+        ${leftR1HTML}
+      </div>
+      <div class="bracket-col">
+        <div class="bracket-col-header">Quarterfinals<span>May 16–17</span></div>
+        ${leftR2HTML}
+      </div>
+      <div class="bracket-col">
+        <div class="bracket-col-header">Semifinals<span>May 23</span></div>
+        ${leftSFHTML}
+      </div>
+      ${champHTML}
+      <div class="bracket-col">
+        <div class="bracket-col-header">Semifinals<span>May 23</span></div>
+        ${rightSFHTML}
+      </div>
+      <div class="bracket-col">
+        <div class="bracket-col-header">Quarterfinals<span>May 16–17</span></div>
+        ${rightR2HTML}
+      </div>
+      <div class="bracket-col">
+        <div class="bracket-col-header">First Round<span>May 9–10</span></div>
+        ${rightR1HTML}
+      </div>
+    </div>
+  </div>`;
 }
 
 async function doSavePicks() {
@@ -970,7 +1170,7 @@ async function doSavePicks() {
   btn.innerHTML = '<span class="saving-spinner"></span>Saving…';
   btn.disabled = true;
   try {
-    const r = await api({ action: 'savePicks', username: S.user, password: S.pass, picks: S.picks });
+    const r = await api({ action: 'savePicks', username: S.user, password: S.pass, picks: S.picks, tiebreaker: S.picks['tiebreaker'] || '' });
     if (r.ok) {
       S.dirty = false;
       document.getElementById('saveMsg').textContent = 'Picks saved ✓';
